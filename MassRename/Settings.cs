@@ -13,7 +13,7 @@ namespace MassRename
 
         #region Settings internals
 
-        private const string path = "MassRename.ini";
+        private static readonly string path = Application.StartupPath + Path.DirectorySeparatorChar + "MassRename.ini";
 
         // Singleton code
         /// <summary>
