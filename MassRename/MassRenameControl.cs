@@ -67,6 +67,10 @@ namespace MassRename
             string[] original = this.tbOld.Text.Split(delimiter, StringSplitOptions.RemoveEmptyEntries);
             string[] replacement = this.tbNew.Text.Split(delimiter, StringSplitOptions.RemoveEmptyEntries);
             string prefix = this.tbBrowse.Text + Path.DirectorySeparatorChar;
+            if (original.Length == 0) {
+                MessageBox.Show("No files to rename", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
             if (original.Length != replacement.Length) {
                 MessageBox.Show("The number of files is not equal", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
