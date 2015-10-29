@@ -229,6 +229,51 @@ namespace MassRename
         }
     }
 
+    class RichTb : RichTextBox
+    {
+        public Lbl Label;
+
+        public RichTb(Control parent) {
+            // Some default things about checkboxes
+            parent.Controls.Add(this);
+        }
+
+        /// <summary>
+        /// Locate this control inside its parent in a specific way
+        /// </summary>
+        /// <param name="c">It's parent</param>
+        /// <param name="h">The horizontal placement</param>
+        /// <param name="v">The vertical placement</param>
+        /// <param name="distance">The margin</param>
+        public void LocateInside(Control c, Btn.Horizontal h = Btn.Horizontal.Left, Btn.Vertical v = Btn.Vertical.Top, int d = Btn.distance) {
+            Btn.LocateInside(this, c, h, v, d);
+        }
+
+        /// <summary>
+        /// Locate this control adjacent to the other control in a specific way
+        /// </summary>
+        /// <param name="c">The other control</param>
+        /// <param name="h">The horizontal placement</param>
+        /// <param name="v">The vertical placement</param>
+        /// <param name="distance">The margin</param>
+        public void LocateFrom(Control c, Btn.Horizontal h = Btn.Horizontal.CopyLeft, Btn.Vertical v = Btn.Vertical.CopyTop, int d = Btn.distance) {
+            Btn.LocateFrom(this, c, h, v, d);
+        }
+
+        /// <summary>
+        /// Add a label to this control
+        /// </summary>
+        /// <param name="text">The text of the label</param>
+        /// <param name="d">The distance between the label and the control</param>
+        /// <param name="moveCtrl">Whether the control should be moved or not</param>
+        /// <param name="labelWidth">The width of the label. Set to 0 to keep the original width</param>
+        public void AddLabel(string text, int d = Btn.distance, bool moveCtrl = true, int labelWidth = 0) {
+            if (this.Label != null)
+                this.Parent.Controls.Remove(this.Label);
+            this.Label = Btn.AddLabel(this, text, d, moveCtrl, labelWidth);
+        }
+    }
+
     class Lb : ListBox
     {
         public Lbl Label;

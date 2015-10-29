@@ -13,7 +13,7 @@ namespace MassRename
 
         #region Settings internals
 
-        private const string path = "settings.ini";
+        private const string path = "MassRename.ini";
 
         // Singleton code
         /// <summary>

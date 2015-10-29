@@ -10,7 +10,7 @@ namespace MassRename
     {
         Btn btnBrowse, btnRename;
         Tb tbBrowse;
-        Tb tbOld, tbNew;
+        RichTb tbOld, tbNew;
 
         public MassRenameControl() {
             // The controls
@@ -19,11 +19,14 @@ namespace MassRename
             this.btnBrowse.Click += this.browse;
             this.btnRename = new Btn("Rename", this);
             this.btnRename.Click += this.rename;
-            this.tbOld = new Tb(this);
-            this.tbOld.Multiline = true;
+            this.tbOld = new RichTb(this);
             this.tbOld.ReadOnly = true;
-            this.tbNew = new Tb(this);
-            this.tbNew.Multiline = true;
+            int color = 250;
+            this.tbOld.BackColor = Color.FromArgb(color, color, color);
+            this.tbOld.ForeColor = Color.Black;
+            this.tbNew = new RichTb(this);
+            this.tbNew.BackColor = Color.FromArgb(color, color, color);
+            this.tbNew.ForeColor = Color.Black;
         }
 
         public override void OnResize() {
@@ -48,17 +51,40 @@ namespace MassRename
             dialog.Multiselect = true;
             if (dialog.ShowDialog() == DialogResult.OK && dialog.FileNames.Length > 0) {
                 this.tbBrowse.Text = Path.GetDirectoryName(dialog.FileNames[0]);
+                Settings.Get.LastDir = this.tbBrowse.Text;
                 StringBuilder sb = new StringBuilder();
                 foreach (string path in dialog.FileNames)
                     sb.AppendLine(Path.GetFileName(path));
                 this.tbOld.Text = sb.ToString();
                 this.tbNew.Text = this.tbOld.Text;
+                this.tbNew.Focus();
             }
         }
 
         private void rename(object o, EventArgs e) {
-            // http://stackoverflow.com/questions/12347881/renaming-files-in-folder-c-sharp
-            // Todo
+            // Rename all the files
+            char[] delimiter = Environment.NewLine.ToCharArray();
+            string[] original = this.tbOld.Text.Split(delimiter, StringSplitOptions.RemoveEmptyEntries);
+            string[] replacement = this.tbNew.Text.Split(delimiter, StringSplitOptions.RemoveEmptyEntries);
+            string prefix = this.tbBrowse.Text + Path.DirectorySeparatorChar;
+            if (original.Length != replacement.Length) {
+                MessageBox.Show("The number of files is not equal", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+            for (int i = 0; i < original.Length; i++) {
+                try {
+                    File.Move(prefix + original[i], prefix + replacement[i]);
+                }
+                catch (Exception ex) {
+                    string msg = "Error trying to rename the file (#" + i.ToString() + "): " + original[i] + Environment.NewLine + "Message: " + ex.Message;
+                    MessageBox.Show(msg, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return;
+                }
+            }
+
+            // We succeeded, so let's celebrate
+            this.tbOld.Text = this.tbNew.Text;
+            this.tbNew.Text = "The files are renamed successfully.";
         }
     }
 }
