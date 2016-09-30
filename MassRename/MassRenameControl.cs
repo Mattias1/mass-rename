@@ -3,27 +3,35 @@ using System.IO;
 using System.Text;
 using System.Drawing;
 using System.Windows.Forms;
+using System.Collections.Generic;
 
 namespace MassRename
 {
     class MassRenameControl : MattyUserControl
     {
-        Btn btnBrowse, btnRename;
+        Btn btnBrowseFiles, btnBrowseDir, btnRename;
         Tb tbBrowse;
         RichTb tbOld, tbNew;
 
         public MassRenameControl() {
             // The controls
             this.tbBrowse = new Tb(this);
-            this.btnBrowse = new Btn("Browse", this);
-            this.btnBrowse.Click += this.browse;
+
+            this.btnBrowseFiles = new Btn("Browse files", this);
+            this.btnBrowseFiles.Click += this.browseFiles;
+
+            this.btnBrowseDir = new MassRename.Btn("Browse dir", this);
+            this.btnBrowseDir.Click += this.browseDir;
+
             this.btnRename = new Btn("Rename", this);
             this.btnRename.Click += this.rename;
+
+            int color = 250;
             this.tbOld = new RichTb(this);
             this.tbOld.ReadOnly = true;
-            int color = 250;
             this.tbOld.BackColor = Color.FromArgb(color, color, color);
             this.tbOld.ForeColor = Color.Black;
+
             this.tbNew = new RichTb(this);
             this.tbNew.BackColor = Color.FromArgb(color, color, color);
             this.tbNew.ForeColor = Color.Black;
@@ -32,8 +40,9 @@ namespace MassRename
         public override void OnResize() {
             // All the locations and sizes
             this.tbBrowse.LocateInside(this);
-            this.tbBrowse.Size = new Size(this.Width - this.btnBrowse.Width * 2 - 50, this.tbBrowse.Height);
-            this.btnBrowse.LocateFrom(this.tbBrowse, Btn.Horizontal.Right, Btn.Vertical.CopyTop);
+            this.tbBrowse.Size = new Size(this.Width - this.btnBrowseFiles.Width * 3 - 50, this.tbBrowse.Height);
+            this.btnBrowseFiles.LocateFrom(this.tbBrowse, Btn.Horizontal.Right, Btn.Vertical.CopyTop);
+            this.btnBrowseDir.LocateFrom(this.btnBrowseFiles, Btn.Horizontal.Right, Btn.Vertical.CopyTop);
 
             this.btnRename.LocateInside(this, Btn.Horizontal.Right, Btn.Vertical.Top);
 
@@ -43,22 +52,45 @@ namespace MassRename
             this.tbNew.Size = this.tbOld.Size;
         }
 
-        private void browse(object o, EventArgs e) {
+        private void browseFiles(object o, EventArgs e) {
             // Get all the file names with a shiny dialog
-            OpenFileDialog dialog = new OpenFileDialog();
+            var dialog = new OpenFileDialog();
             dialog.Title = "The files to rename";
             dialog.InitialDirectory = Settings.Get.LastDir;
             dialog.Multiselect = true;
+
             if (dialog.ShowDialog() == DialogResult.OK && dialog.FileNames.Length > 0) {
-                this.tbBrowse.Text = Path.GetDirectoryName(dialog.FileNames[0]);
-                Settings.Get.LastDir = this.tbBrowse.Text;
-                StringBuilder sb = new StringBuilder();
-                foreach (string path in dialog.FileNames)
-                    sb.AppendLine(Path.GetFileName(path));
-                this.tbOld.Text = sb.ToString();
-                this.tbNew.Text = this.tbOld.Text;
-                this.tbNew.Focus();
+                setFiles(Path.GetDirectoryName(dialog.FileNames[0]), dialog.FileNames);
             }
+        }
+
+        private void browseDir(object o, EventArgs e) {
+            // Get all the file names with a shiny dialog
+            var dialog = new FolderBrowserDialog();
+            dialog.Description = "Rename all folders and files in the selected folder.";
+            dialog.SelectedPath = Settings.Get.LastDir;
+
+            if (dialog.ShowDialog() == DialogResult.OK && !string.IsNullOrEmpty(dialog.SelectedPath)) {
+                List<string> paths = new List<string>();
+                paths.AddRange(Directory.GetDirectories(dialog.SelectedPath));
+                paths.AddRange(Directory.GetFiles(dialog.SelectedPath));
+
+                setFiles(dialog.SelectedPath, paths);
+            }
+        }
+
+        private void setFiles(string pathPrefix, IEnumerable<string> fileNames) {
+            // Fill the filename text boxes
+            this.tbBrowse.Text = pathPrefix;
+            Settings.Get.LastDir = pathPrefix;
+
+            StringBuilder sb = new StringBuilder();
+            foreach (string path in fileNames)
+                sb.AppendLine(Path.GetFileName(path));
+
+            this.tbOld.Text = sb.ToString();
+            this.tbNew.Text = this.tbOld.Text;
+            this.tbNew.Focus();
         }
 
         private void rename(object o, EventArgs e) {
@@ -67,6 +99,7 @@ namespace MassRename
             string[] original = this.tbOld.Text.Split(delimiter, StringSplitOptions.RemoveEmptyEntries);
             string[] replacement = this.tbNew.Text.Split(delimiter, StringSplitOptions.RemoveEmptyEntries);
             string prefix = this.tbBrowse.Text + Path.DirectorySeparatorChar;
+
             if (original.Length == 0) {
                 MessageBox.Show("No files to rename", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
@@ -75,9 +108,16 @@ namespace MassRename
                 MessageBox.Show("The number of files is not equal", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
             }
+
             for (int i = 0; i < original.Length; i++) {
                 try {
-                    File.Move(prefix + original[i], prefix + replacement[i]);
+                    string originalPath = prefix + original[i];
+                    string newPath = prefix + replacement[i];
+
+                    if (IsDirectory(originalPath))
+                        File.Move(originalPath, newPath);
+                    else
+                        Directory.Move(originalPath, newPath);
                 }
                 catch (Exception ex) {
                     string msg = "Error trying to rename the file (#" + i.ToString() + "): " + original[i] + Environment.NewLine + "Message: " + ex.Message;
@@ -89,6 +129,15 @@ namespace MassRename
             // We succeeded, so let's celebrate
             this.tbOld.Text = this.tbNew.Text;
             this.tbNew.Text = "The files are renamed successfully.";
+        }
+
+        // Returns true if the path is a dir, false if it's a file and null if it's neither or doesn't exist.
+        public static bool IsDirectory(string path) {
+            if (Directory.Exists(path) || File.Exists(path)) {
+                var fileAttr = File.GetAttributes(path);
+                return (fileAttr & FileAttributes.Directory) == FileAttributes.Directory;
+            }
+            throw new FileNotFoundException("The path doesn't exist.");
         }
     }
 }
