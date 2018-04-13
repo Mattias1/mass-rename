@@ -114,10 +114,13 @@ namespace MassRename
                     string originalPath = prefix + original[i];
                     string newPath = prefix + replacement[i];
 
+                    if (originalPath == newPath)
+                        continue;
+
                     if (IsDirectory(originalPath))
-                        File.Move(originalPath, newPath);
-                    else
                         Directory.Move(originalPath, newPath);
+                    else
+                        File.Move(originalPath, newPath);
                 }
                 catch (Exception ex) {
                     string msg = "Error trying to rename the file (#" + i.ToString() + "): " + original[i] + Environment.NewLine + "Message: " + ex.Message;
