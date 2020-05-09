@@ -9,9 +9,9 @@ namespace MassRename
 {
     class MassRenameControl : MattyUserControl
     {
-        Btn btnBrowseFiles, btnBrowseDir, btnRename;
-        Tb tbBrowse;
-        RichTb tbOld, tbNew;
+        private Btn btnBrowseFiles, btnBrowseDir, btnRename;
+        private Tb tbBrowse;
+        private RichTb tbOld, tbNew;
 
         public MassRenameControl() {
             // The controls
@@ -20,7 +20,7 @@ namespace MassRename
             this.btnBrowseFiles = new Btn("Browse files", this);
             this.btnBrowseFiles.Click += this.browseFiles;
 
-            this.btnBrowseDir = new MassRename.Btn("Browse dir", this);
+            this.btnBrowseDir = new Btn("Browse dir", this);
             this.btnBrowseDir.Click += this.browseDir;
 
             this.btnRename = new Btn("Rename", this);
@@ -85,8 +85,9 @@ namespace MassRename
             Settings.Get.LastDir = pathPrefix;
 
             StringBuilder sb = new StringBuilder();
-            foreach (string path in fileNames)
+            foreach (string path in fileNames) {
                 sb.AppendLine(Path.GetFileName(path));
+            }
 
             this.tbOld.Text = sb.ToString();
             this.tbNew.Text = this.tbOld.Text;

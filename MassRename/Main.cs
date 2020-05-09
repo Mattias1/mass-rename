@@ -1,8 +1,6 @@
 ﻿using System;
-using System.IO;
 using System.Drawing;
 using System.Windows.Forms;
-using System.Collections.Generic;
 
 namespace MassRename
 {
@@ -10,7 +8,7 @@ namespace MassRename
     {
         private static Size MinSize = new Size(700, 400);
 
-        MattyUserControl[] userControls;
+        private MattyUserControl[] userControls;
         public int GoToControl;
 
         public Main() {
@@ -41,7 +39,7 @@ namespace MassRename
             this.ResizeEnd += onResizeEnd;
         }
 
-        void onResizeEnd(object o, EventArgs e) {
+        private void onResizeEnd(object o, EventArgs e) {
             // Make sure its not too small
             this.ClientSize = new Size(Math.Max(this.ClientSize.Width, MinSize.Width), Math.Max(this.ClientSize.Height, MinSize.Height));
 
@@ -60,8 +58,9 @@ namespace MassRename
         /// </summary>
         /// <param name="i">The index</param>
         public void ShowUserControl(int i) {
-            foreach (MattyUserControl u in this.userControls)
+            foreach (MattyUserControl u in this.userControls) {
                 u.Hide();
+            }
             this.userControls[i].Show();
             this.userControls[i].Size = this.ClientSize;
             this.userControls[i].OnResize();
@@ -71,12 +70,10 @@ namespace MassRename
     class MattyUserControl : UserControl
     {
         public int GoToControl {
-            get { return this.Main.GoToControl; }
-            set { this.Main.GoToControl = value; }
+            get => this.Main.GoToControl;
+            set => this.Main.GoToControl = value;
         }
-        public Main Main {
-            get { return (Main)this.Parent; }
-        }
+        public Main Main => (Main)this.Parent;
 
         /// <summary>
         /// Show usercontrol at index i and hide all others

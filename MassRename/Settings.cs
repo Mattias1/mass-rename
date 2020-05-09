@@ -209,18 +209,18 @@ namespace MassRename
         #endregion
 
         public Point Position {
-            get { return this.get("position", Point.Empty); }
-            set { this.set("position", value); }
+            get => this.get("position", Point.Empty);
+            set => this.set("position", value);
         }
 
         public Point Size {
-            get { return this.get("size", Point.Empty); }
-            set { this.set("size", value); }
+            get => this.get("size", Point.Empty);
+            set => this.set("size", value);
         }
 
         public string LastDir {
-            get { return this.get("lastdir", Application.StartupPath); }
-            set { this.set("lastdir", value); }
+            get => this.get("lastdir", Application.StartupPath);
+            set => this.set("lastdir", value);
         }
     }
 }
