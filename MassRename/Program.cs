@@ -16,7 +16,13 @@ namespace MassRename
             // Start the app
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
-            Application.Run(new Main());
+
+            var mainForm = new Main();
+            if (args.Length > 0) {
+                mainForm.LoadArgumentsFileOrDir(args[0]);
+            }
+
+            Application.Run(mainForm);
 
             // Save the settings
             Settings.Get.Save();

@@ -8,6 +8,7 @@ namespace MassRename
     {
         private static Size MinSize = new Size(700, 400);
 
+        private MassRenameControl massRenameControl;
         private MattyUserControl[] userControls;
         public int GoToControl;
 
@@ -24,7 +25,8 @@ namespace MassRename
             this.MaximizeBox = false;
 
             // Add the controls
-            this.userControls = new MattyUserControl[] { new MassRenameControl() };
+            this.massRenameControl = new MassRenameControl();
+            this.userControls = new MattyUserControl[] { massRenameControl };
             foreach (MattyUserControl u in this.userControls) {
                 u.Size = this.ClientSize;
                 this.Controls.Add(u);
@@ -64,6 +66,10 @@ namespace MassRename
             this.userControls[i].Show();
             this.userControls[i].Size = this.ClientSize;
             this.userControls[i].OnResize();
+        }
+
+        public void LoadArgumentsFileOrDir(string path) {
+            this.massRenameControl.SetFilesFromDir(path);
         }
     }
 

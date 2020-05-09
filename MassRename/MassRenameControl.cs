@@ -4,6 +4,7 @@ using System.Text;
 using System.Drawing;
 using System.Windows.Forms;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace MassRename
 {
@@ -71,12 +72,17 @@ namespace MassRename
             dialog.SelectedPath = Settings.Get.LastDir;
 
             if (dialog.ShowDialog() == DialogResult.OK && !string.IsNullOrEmpty(dialog.SelectedPath)) {
-                List<string> paths = new List<string>();
-                paths.AddRange(Directory.GetDirectories(dialog.SelectedPath));
-                paths.AddRange(Directory.GetFiles(dialog.SelectedPath));
-
-                setFiles(dialog.SelectedPath, paths);
+                SetFilesFromDir(dialog.SelectedPath);
             }
+        }
+
+        public void SetFilesFromDir(string directoryPath) {
+            if (!Directory.Exists(directoryPath)) {
+                return;
+            }
+
+            var filePaths = Directory.GetFiles(directoryPath);
+            setFiles(directoryPath, filePaths);
         }
 
         private void setFiles(string pathPrefix, IEnumerable<string> fileNames) {
