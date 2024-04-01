@@ -1,153 +1,139 @@
-﻿using System;
-using System.IO;
+﻿using Avalonia.Controls;
+using Avalonia.Interactivity;
+using Avalonia.Platform.Storage;
+using AvaloniaExtensions;
+using MsBox.Avalonia;
+using MsBox.Avalonia.Enums;
 using System.Text;
-using System.Drawing;
-using System.Windows.Forms;
-using System.Collections.Generic;
-using System.Linq;
 
-namespace MassRename
-{
-    class MassRenameControl : MattyUserControl
-    {
-        private Btn btnBrowseFiles, btnBrowseDir, btnRename;
-        private Tb tbBrowse;
-        private RichTb tbOld, tbNew;
+namespace MassRename;
 
-        public MassRenameControl() {
-            // The controls
-            this.tbBrowse = new Tb(this);
+class MassRenameControl : CanvasComponentBase {
+  private Settings? _settings;
+  private Settings Settings => _settings ??= GetSettings<Settings>();
+  private readonly Args _args;
 
-            this.btnBrowseFiles = new Btn("Browse files", this);
-            this.btnBrowseFiles.Click += this.browseFiles;
+  private TextBox _tbBrowse = null!;
+  private TextBox _tbOld = null!, _tbNew = null!;
 
-            this.btnBrowseDir = new Btn("Browse dir", this);
-            this.btnBrowseDir.Click += this.browseDir;
+  public MassRenameControl(Args args) {
+    _args = args;
+  }
 
-            this.btnRename = new Btn("Rename", this);
-            this.btnRename.Click += this.rename;
+  protected override void InitializeControls() {
+    AddButton("Rename", OnRenameClick).TopRightInPanel();
+    AddButton("Browse dir", OnBrowseDirClick).LeftOf();
+    var btnBrowseFiles = AddButton("Browse files", OnBrowseFilesClick).LeftOf();
+    _tbBrowse = AddTextBox(Settings.LastDir ?? "").TopLeftInPanel().StretchRightTo(btnBrowseFiles);
 
-            int color = 250;
-            this.tbOld = new RichTb(this);
-            this.tbOld.ReadOnly = true;
-            this.tbOld.BackColor = Color.FromArgb(color, color, color);
-            this.tbOld.ForeColor = Color.Black;
+    _tbOld = AddMultilineTextBox().Below().StretchFractionRightInPanel(1, 2).StretchDownInPanel();
+    _tbNew = AddMultilineTextBox().RightOf().StretchRightInPanel().StretchDownInPanel();
+  }
 
-            this.tbNew = new RichTb(this);
-            this.tbNew.BackColor = Color.FromArgb(color, color, color);
-            this.tbNew.ForeColor = Color.Black;
-        }
+  protected override void OnSizeChanged(SizeChangedEventArgs e) {
+    base.OnSizeChanged(e);
+    Settings.Size = e.NewSize;
+  }
 
-        public override void OnResize() {
-            // All the locations and sizes
-            this.tbBrowse.LocateInside(this);
-            this.tbBrowse.Size = new Size(this.Width - this.btnBrowseFiles.Width * 3 - 50, this.tbBrowse.Height);
-            this.btnBrowseFiles.LocateFrom(this.tbBrowse, Btn.Horizontal.Right, Btn.Vertical.CopyTop);
-            this.btnBrowseDir.LocateFrom(this.btnBrowseFiles, Btn.Horizontal.Right, Btn.Vertical.CopyTop);
-
-            this.btnRename.LocateInside(this, Btn.Horizontal.Right, Btn.Vertical.Top);
-
-            this.tbOld.LocateFrom(this.tbBrowse, Btn.Horizontal.CopyLeft, Btn.Vertical.Bottom);
-            this.tbOld.Size = new Size(this.Width / 2 - 15, this.Height - this.tbOld.Location.Y - 10);
-            this.tbNew.LocateFrom(this.tbOld, Btn.Horizontal.Right, Btn.Vertical.CopyTop);
-            this.tbNew.Size = this.tbOld.Size;
-        }
-
-        private void browseFiles(object o, EventArgs e) {
-            // Get all the file names with a shiny dialog
-            var dialog = new OpenFileDialog();
-            dialog.Title = "The files to rename";
-            dialog.InitialDirectory = Settings.Get.LastDir;
-            dialog.Multiselect = true;
-
-            if (dialog.ShowDialog() == DialogResult.OK && dialog.FileNames.Length > 0) {
-                setFiles(Path.GetDirectoryName(dialog.FileNames[0]), dialog.FileNames);
-            }
-        }
-
-        private void browseDir(object o, EventArgs e) {
-            // Get all the file names with a shiny dialog
-            var dialog = new FolderBrowserDialog();
-            dialog.Description = "Rename all folders and files in the selected folder.";
-            dialog.SelectedPath = Settings.Get.LastDir;
-
-            if (dialog.ShowDialog() == DialogResult.OK && !string.IsNullOrEmpty(dialog.SelectedPath)) {
-                SetFilesFromDir(dialog.SelectedPath);
-            }
-        }
-
-        public void SetFilesFromDir(string directoryPath) {
-            if (!Directory.Exists(directoryPath)) {
-                return;
-            }
-
-            var filePaths = Directory.GetFiles(directoryPath);
-            setFiles(directoryPath, filePaths);
-        }
-
-        private void setFiles(string pathPrefix, IEnumerable<string> fileNames) {
-            // Fill the filename text boxes
-            this.tbBrowse.Text = pathPrefix;
-            Settings.Get.LastDir = pathPrefix;
-
-            StringBuilder sb = new StringBuilder();
-            foreach (string path in fileNames) {
-                sb.AppendLine(Path.GetFileName(path));
-            }
-
-            this.tbOld.Text = sb.ToString();
-            this.tbNew.Text = this.tbOld.Text;
-            this.tbNew.Focus();
-        }
-
-        private void rename(object o, EventArgs e) {
-            // Rename all the files
-            char[] delimiter = Environment.NewLine.ToCharArray();
-            string[] original = this.tbOld.Text.Split(delimiter, StringSplitOptions.RemoveEmptyEntries);
-            string[] replacement = this.tbNew.Text.Split(delimiter, StringSplitOptions.RemoveEmptyEntries);
-            string prefix = this.tbBrowse.Text + Path.DirectorySeparatorChar;
-
-            if (original.Length == 0) {
-                MessageBox.Show("No files to rename", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                return;
-            }
-            if (original.Length != replacement.Length) {
-                MessageBox.Show("The number of files is not equal", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                return;
-            }
-
-            for (int i = 0; i < original.Length; i++) {
-                try {
-                    string originalPath = prefix + original[i];
-                    string newPath = prefix + replacement[i];
-
-                    if (originalPath == newPath)
-                        continue;
-
-                    if (IsDirectory(originalPath))
-                        Directory.Move(originalPath, newPath);
-                    else
-                        File.Move(originalPath, newPath);
-                }
-                catch (Exception ex) {
-                    string msg = "Error trying to rename the file (#" + i.ToString() + "): " + original[i] + Environment.NewLine + "Message: " + ex.Message;
-                    MessageBox.Show(msg, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    return;
-                }
-            }
-
-            // We succeeded, so let's celebrate
-            this.tbOld.Text = this.tbNew.Text;
-            this.tbNew.Text = "The files are renamed successfully.";
-        }
-
-        // Returns true if the path is a dir, false if it's a file and null if it's neither or doesn't exist.
-        public static bool IsDirectory(string path) {
-            if (Directory.Exists(path) || File.Exists(path)) {
-                var fileAttr = File.GetAttributes(path);
-                return (fileAttr & FileAttributes.Directory) == FileAttributes.Directory;
-            }
-            throw new FileNotFoundException("The path doesn't exist.");
-        }
+  private async void OnBrowseFilesClick(RoutedEventArgs e) { // Note: async void event handler
+    try {
+      var files = await GetPathsViaFileDialogAsync();
+      if (files.Count > 0) {
+        SetFiles(Path.GetDirectoryName(files.First().Path.AbsolutePath), files.Select(f => f.Name));
+      }
+    } catch (Exception exc) {
+      Console.WriteLine(exc);
+      throw;
     }
+  }
+
+  private async Task<IReadOnlyList<IStorageFile>> GetPathsViaFileDialogAsync() {
+    var storageProvider = FindWindow().StorageProvider;
+
+    var location = await GetFolderAsync(storageProvider, _args.InitialDirectory ?? Settings.LastDir);
+    var options = new FilePickerOpenOptions {
+        Title = "The files to rename",
+        SuggestedStartLocation = location,
+        AllowMultiple = true
+    };
+
+    return await storageProvider.OpenFilePickerAsync(options).ConfigureAwait(true);
+  }
+
+  private static async Task<IStorageFolder?> GetFolderAsync(IStorageProvider storageProvider, string? path) {
+    return path is null ? null : await storageProvider.TryGetFolderFromPathAsync(new Uri(path));
+  }
+
+  private async void OnBrowseDirClick(RoutedEventArgs e) { // Note: async void event handler
+    try {
+      var dir = await GetPathViaDirectoryDialogAsync();
+      SetFilesFromDir(dir.Path.AbsolutePath);
+    } catch (Exception exc) {
+      Console.WriteLine(exc);
+      throw;
+    }
+  }
+
+  private async Task<IStorageFolder> GetPathViaDirectoryDialogAsync() {
+    var storageProvider = FindWindow().StorageProvider;
+
+    var location = await GetFolderAsync(storageProvider, _args.InitialDirectory ?? Settings.LastDir);
+    var options = new FolderPickerOpenOptions {
+        Title = "Rename all folders and files in the selected folder",
+        SuggestedStartLocation = location,
+        AllowMultiple = false
+    };
+
+    var directories = await storageProvider.OpenFolderPickerAsync(options).ConfigureAwait(true);
+    return directories.Single();
+  }
+
+  private void SetFilesFromDir(string directoryPath) {
+    if (!Directory.Exists(directoryPath)) {
+      return;
+    }
+
+    var filenames = Directory.GetFiles(directoryPath)
+        .Select(p => Path.GetFileName(p) ?? "")
+        .Where(s => !string.IsNullOrWhiteSpace(s));
+    SetFiles(directoryPath, filenames);
+  }
+
+  private void SetFiles(string? pathPrefix, IEnumerable<string> fileNames) {
+    if (pathPrefix is null) {
+      return;
+    }
+
+    _tbBrowse.Text = pathPrefix;
+    Settings.LastDir = pathPrefix;
+
+    var sb = new StringBuilder();
+    foreach (string path in fileNames) {
+      sb.AppendLine(Path.GetFileName(path));
+    }
+
+    _tbOld.Text = sb.ToString();
+    _tbNew.Text = _tbOld.Text;
+    _tbNew.Focus();
+  }
+
+  private async void OnRenameClick(RoutedEventArgs e) { // Note: async void event handler
+    string? errorMessage;
+    try {
+      errorMessage = FileManipulator.RenameFiles(_tbBrowse.Text, _tbOld.Text, _tbNew.Text);
+    } catch (Exception exc) {
+      errorMessage = "An unknown error occurred.\n" + exc.Message;
+    }
+    try {
+      if (!string.IsNullOrWhiteSpace(errorMessage)) {
+        await MessageBoxManager.GetMessageBoxStandard("Error", errorMessage, ButtonEnum.Ok, Icon.Error).ShowAsync();
+        return;
+      }
+
+      _tbOld.Text = _tbNew.Text;
+      _tbNew.Text = "The files are renamed successfully.";
+    } catch (Exception exc) {
+      Console.Write(exc);
+    }
+  }
 }

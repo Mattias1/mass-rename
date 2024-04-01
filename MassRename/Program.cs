@@ -1,31 +1,13 @@
-﻿using System;
-using System.Windows.Forms;
+﻿using Avalonia;
+using AvaloniaExtensions;
+using Avalonia.Markup.Declarative;
+using MassRename;
 
-namespace MassRename
-{
-    static class Program
-    {
-        /// <summary>
-        /// The main entry point for the application.
-        /// </summary>
-        [STAThread]
-        static void Main(string[] args) {
-            // Load the settings and the all the account info
-            Settings.Get.Load();
+var parsedArgs = Args.ParseFrom(args);
 
-            // Start the app
-            Application.EnableVisualStyles();
-            Application.SetCompatibleTextRenderingDefault(false);
-
-            var mainForm = new Main();
-            if (args.Length > 0) {
-                mainForm.LoadArgumentsFileOrDir(args[0]);
-            }
-
-            Application.Run(mainForm);
-
-            // Save the settings
-            Settings.Get.Save();
-        }
-    }
-}
+var minSize = new Size(700, 400);
+AvaloniaExtensionsApp.Init()
+  .WithSettingsFile<Settings>("./mass-rename-settings.json")
+  .StartDesktopApp(() => ExtendedWindow.Init("Mass rename tool", () => new MassRenameControl(parsedArgs))
+    .WithSize(size: SettingsFiles.Get.GetSettings<Settings>().Size ?? minSize, minSize: minSize)
+    .Icon(AssetExtensions.LoadWindowIcon("assets/eyes.ico")));
