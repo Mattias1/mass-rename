@@ -1,8 +1,7 @@
-﻿using Avalonia;
-
-namespace MassRename;
+﻿namespace MassRename;
 
 public class Settings {
   public string? LastDir { get; set; }
-  public Size? Size { get; set; }
+  public double Width { get; set; }
+  public double Height { get; set; }
 }

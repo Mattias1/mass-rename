@@ -32,7 +32,8 @@ class MassRenameControl : CanvasComponentBase {
 
   protected override void OnSizeChanged(SizeChangedEventArgs e) {
     base.OnSizeChanged(e);
-    Settings.Size = e.NewSize;
+    Settings.Width = e.NewSize.Width;
+    Settings.Height = e.NewSize.Height;
   }
 
   private async void OnBrowseFilesClick(RoutedEventArgs e) { // Note: async void event handler
