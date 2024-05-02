@@ -3,7 +3,7 @@ using Avalonia.Platform.Storage;
 namespace MassRename.UI;
 
 public static class DialogHelper {
-  public static async Task<IStorageFolder> GetPathViaDirectoryDialogAsync(IStorageProvider storageProvider, string? directory) {
+  public static async Task<IStorageFolder?> GetPathViaDirectoryDialogAsync(IStorageProvider storageProvider, string? directory) {
     var location = await GetFolderAsync(storageProvider, directory);
     var options = new FolderPickerOpenOptions {
         Title = "Rename all folders and files in the selected folder",
@@ -12,7 +12,7 @@ public static class DialogHelper {
     };
 
     var directories = await storageProvider.OpenFolderPickerAsync(options).ConfigureAwait(true);
-    return directories.Single();
+    return directories.SingleOrDefault();
   }
 
   public static async Task<IReadOnlyList<IStorageFile>> GetPathsViaFileDialogAsync(IStorageProvider storageProvider, string? directory) {

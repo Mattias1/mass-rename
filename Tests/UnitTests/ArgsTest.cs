@@ -10,6 +10,8 @@ public class ArgsTest {
     var args = Args.ParseFrom(null);
     args.InitialDirectory.Should().BeNull();
     args.Music.Should().BeNull();
+    args.OpenInEditor.Should().BeFalse();
+    args.SetEditor.Should().BeNull();
   }
 
   [Fact]
@@ -17,6 +19,14 @@ public class ArgsTest {
     var args = Args.ParseFrom([]);
     args.InitialDirectory.Should().BeNull();
     args.Music.Should().BeNull();
+    args.OpenInEditor.Should().BeFalse();
+    args.SetEditor.Should().BeNull();
+  }
+
+  [Fact]
+  public void ParseOpenInEditor() {
+    var args = Args.ParseFrom(["--open"]);
+    args.OpenInEditor.Should().BeTrue();
   }
 
   [Fact]
