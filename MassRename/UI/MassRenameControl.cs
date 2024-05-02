@@ -1,5 +1,6 @@
 ﻿using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
+using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Markup.Declarative;
 using AvaloniaExtensions;
@@ -21,11 +22,11 @@ class MassRenameControl : CanvasComponentBase {
   }
 
   protected override void InitializeControls() {
-    AddButton("↗", OnOpenInEditorClick).Width(30).MinWidth(30).TopRightInPanel();
-    AddButton("Rename", OnRenameClick).LeftOf();
-    _tbMusic = AddCheckBox("Music data", OnMusicDataToggle).LeftOf();
-    AddButton("Folders", OnBrowseDirClick).LeftOf();
-    AddButton("Files", OnBrowseFilesClick).LeftOf();
+    AddButton("↗", OnOpenInEditorClick).HotKey("Ctrl+Space").Width(30).MinWidth(30).TopRightInPanel();
+    AddButton("Rename", OnRenameClick).HotKey("Ctrl+Enter").LeftOf();
+    _tbMusic = AddCheckBox("Music data", OnMusicDataToggle).HotKey("Ctrl+M").LeftOf();
+    AddButton("Directory", OnBrowseDirClick).HotKey("Ctrl+D").LeftOf();
+    AddButton("Files", OnBrowseFilesClick).HotKey("Ctrl+F").LeftOf();
     _tbBrowse = AddTextBox(Settings.LastDir ?? "").TopLeftInPanel().StretchRightTo();
 
     _tbOld = AddMultilineTextBox().IsReadOnly(true).Below().StretchFractionRightInPanel(1, 2).StretchDownInPanel();
@@ -74,14 +75,14 @@ class MassRenameControl : CanvasComponentBase {
   private async void OnBrowseDirClick(RoutedEventArgs e) { // Note: async void event handler
     try {
       var dir = await DialogHelper.GetPathViaDirectoryDialogAsync(FindWindow().StorageProvider, _args.InitialDirectory ?? Settings.LastDir);
-      SetFilesFromDir(dir.Path.AbsolutePath);
+      SetFilesFromDir(dir?.Path.AbsolutePath);
     } catch (Exception exc) {
       Console.WriteLine(exc);
       throw;
     }
   }
 
-  private void SetFilesFromDir(string directoryPath) {
+  private void SetFilesFromDir(string? directoryPath) {
     if (!Directory.Exists(directoryPath)) {
       return;
     }
@@ -110,7 +111,7 @@ class MassRenameControl : CanvasComponentBase {
   private void OnMusicDataToggle(RoutedEventArgs obj) {
     Settings.SetMusicData = (obj.Source as ToggleButton)?.IsChecked ?? throw new InvalidOperationException("Cast fail");
 
-    var filenames = _tbOld.Text?.Split(Environment.NewLine.ToCharArray()) ?? [];
+    var filenames = _tbOld.Text?.Split(Environment.NewLine.ToCharArray(), StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries) ?? [];
     filenames = filenames.Skip(Settings.SetMusicData ? 0 : 1).ToArray();
     SetFiles(_tbBrowse.Text, filenames);
   }

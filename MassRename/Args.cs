@@ -5,6 +5,7 @@ public class Args {
   public bool OpenInEditor { get; private set; }
   public string? InitialDirectory { get; private set; }
   public bool? Music { get; private set; }
+  public bool PrintedHelp { get; private set; }
 
   public static Args ParseFrom(string[]? args) {
     var result = new Args();
@@ -15,6 +16,7 @@ public class Args {
         case "-v":
         case "--version":
           PrintHelp();
+          result.PrintedHelp = true;
           break;
 
         case "--set-editor":

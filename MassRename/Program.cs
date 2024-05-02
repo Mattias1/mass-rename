@@ -5,8 +5,9 @@ using MassRename;
 using MassRename.UI;
 
 var parsedArgs = Args.ParseFrom(args);
-
-// TODO: Keyboard shortcuts (Ctrl+Space for opening editor, Ctrl+Enter for renaming)
+if (parsedArgs.PrintedHelp) {
+  return;
+}
 
 var minSize = new Size(700, 400);
 AvaloniaExtensionsApp.Init()
