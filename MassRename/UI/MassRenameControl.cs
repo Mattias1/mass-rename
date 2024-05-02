@@ -21,7 +21,8 @@ class MassRenameControl : CanvasComponentBase {
   }
 
   protected override void InitializeControls() {
-    AddButton("Rename", OnRenameClick).TopRightInPanel();
+    AddButton("↗", OnOpenInEditorClick).Width(30).MinWidth(30).TopRightInPanel();
+    AddButton("Rename", OnRenameClick).LeftOf();
     _tbMusic = AddCheckBox("Music data", OnMusicDataToggle).LeftOf();
     AddButton("Folders", OnBrowseDirClick).LeftOf();
     AddButton("Files", OnBrowseFilesClick).LeftOf();
@@ -45,6 +46,10 @@ class MassRenameControl : CanvasComponentBase {
     if (!string.IsNullOrWhiteSpace(_args.InitialDirectory)) {
       SetFilesFromDir(_args.InitialDirectory);
       Settings.LastDir = _args.InitialDirectory;
+    }
+
+    if (_args.OpenInEditor) {
+      OnOpenInEditorClick(null);
     }
   }
 
@@ -108,6 +113,15 @@ class MassRenameControl : CanvasComponentBase {
     var filenames = _tbOld.Text?.Split(Environment.NewLine.ToCharArray()) ?? [];
     filenames = filenames.Skip(Settings.SetMusicData ? 0 : 1).ToArray();
     SetFiles(_tbBrowse.Text, filenames);
+  }
+
+  private async void OnOpenInEditorClick(RoutedEventArgs? e) { // Note: async void event handler
+    try {
+      _tbNew.Text = await ExternalEditorHelper.OpenAsync(Settings, _tbNew.Text);
+    } catch (Exception exc) {
+      Console.WriteLine(exc);
+      throw;
+    }
   }
 
   private async void OnRenameClick(RoutedEventArgs e) { // Note: async void event handler

@@ -20,6 +20,10 @@ public class Args {
         case "--set-editor":
           result.SetEditor = NextArg(args, ref i);
           break;
+        case "-o":
+        case "--open":
+          result.OpenInEditor = true;
+          break;
 
         case "-m":
         case "--music":
@@ -53,6 +57,7 @@ public class Args {
     Console.WriteLine($"options:");
     Console.WriteLine($"-m, --music:           Set music data");
     Console.WriteLine($"-n, --no-music:        Don't music data");
+    Console.WriteLine($"-o, --open:            Open the files from the given directory in the editor");
     Console.WriteLine($"--set-editor [editor]: Set the editor (default '{Settings.DEFAULT_EDITOR}')");
   }
 }

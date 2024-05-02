@@ -6,6 +6,8 @@ using MassRename.UI;
 
 var parsedArgs = Args.ParseFrom(args);
 
+// TODO: Keyboard shortcuts (Ctrl+Space for opening editor, Ctrl+Enter for renaming)
+
 var minSize = new Size(700, 400);
 AvaloniaExtensionsApp.Init()
   .WithSettingsFile<Settings>("./mass-rename-settings.json")
