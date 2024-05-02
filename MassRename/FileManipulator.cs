@@ -1,7 +1,33 @@
+using System.Text;
+
 namespace MassRename;
 
 public static class FileManipulator {
-  public static string? RenameFiles(string? pathPrefix, string? oldNames, string? newNames) {
+  public static (string from, string to) DetermineTextboxData(string pathPrefix, string[] fileNames, bool setMusicData) {
+    var sbOld = new StringBuilder();
+    var sbNew = new StringBuilder();
+    if (setMusicData) {
+      sbOld.AppendLine("## Filename");
+      sbNew.AppendLine("## Filename | Title | Album | Artists");
+    }
+
+    foreach (string fileName in fileNames) {
+      sbOld.AppendLine(fileName);
+      if (setMusicData) {
+        try {
+          var musicData = GetMusicData(pathPrefix, fileName);
+          sbNew.AppendLine(musicData.ToString());
+        } catch {
+          sbNew.AppendLine(fileName);
+        }
+      } else {
+        sbNew.AppendLine(fileName);
+      }
+    }
+    return (sbOld.ToString(), sbNew.ToString());
+  }
+
+  public static string? RenameFiles(string? pathPrefix, string? oldNames, string? newNames, bool setMusicData) {
     if (string.IsNullOrWhiteSpace(pathPrefix)) {
       return "No path selected";
     }
@@ -9,9 +35,8 @@ public static class FileManipulator {
       return "No filenames provided (from or to)";
     }
 
-    char[] delimiter = Environment.NewLine.ToCharArray();
-    string[] original = oldNames.Split(delimiter, StringSplitOptions.RemoveEmptyEntries);
-    string[] replacement = newNames.Split(delimiter, StringSplitOptions.RemoveEmptyEntries);
+    var original = ParseFileList(oldNames);
+    string[] replacement = ParseFileList(newNames);
     string prefix = pathPrefix + Path.DirectorySeparatorChar;
 
     if (original.Length == 0) {
@@ -24,9 +49,10 @@ public static class FileManipulator {
     for (int i = 0; i < original.Length; i++) {
       try {
         string originalPath = prefix + original[i];
-        string newPath = prefix + replacement[i];
+        var musicData = setMusicData ? MusicData.FromString(replacement[i]) : null;
+        string newPath = prefix + (musicData?.FileName ?? replacement[i]);
 
-        if (originalPath == newPath) {
+        if (originalPath == newPath && !setMusicData) {
           continue;
         }
 
@@ -34,12 +60,22 @@ public static class FileManipulator {
           Directory.Move(originalPath, newPath);
         } else {
           File.Move(originalPath, newPath);
+          SetMusicData(newPath, musicData);
         }
       } catch (Exception ex) {
         return $"Error trying to rename the file (#{i}): {original[i]}{Environment.NewLine}Message: {ex.Message}";
       }
     }
     return null;
+  }
+
+  private static string[] ParseFileList(string oldNames) {
+    char[] delimiter = Environment.NewLine.ToCharArray();
+    string[] original = oldNames.Split(delimiter, StringSplitOptions.RemoveEmptyEntries);
+    if (original.Length > 0 && original[0].StartsWith("##")) {
+      original = original.Skip(1).ToArray();
+    }
+    return original;
   }
 
   // Returns true if the path is a dir, false if it's a file and null if it's neither or doesn't exist.
@@ -49,5 +85,35 @@ public static class FileManipulator {
       return (fileAttr & FileAttributes.Directory) == FileAttributes.Directory;
     }
     throw new FileNotFoundException("The path doesn't exist.");
+  }
+
+  private static void SetMusicData(string path, MusicData? musicData) {
+    if (musicData is null) {
+      return;
+    }
+
+    var file = TagLib.File.Create(path);
+    file.Tag.Title = musicData.Title;
+    file.Tag.Album = musicData.Album;
+    file.Tag.Performers = musicData.Artists?.Split(';', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
+    file.Tag.AlbumArtists = file.Tag.Performers;
+    file.Save();
+  }
+
+  public static MusicData GetMusicData(string pathPrefix, string fileName) {
+    var file = TagLib.File.Create(Path.Join(pathPrefix, fileName));
+    return new MusicData(fileName, file.Tag.Title, file.Tag.Album, file.Tag.JoinedPerformers);
+  }
+
+  public record MusicData(string FileName, string? Title, string? Album, string? Artists) {
+    public override string ToString() => ToString('|');
+    public string ToString(char sep) => $"{FileName} {sep} {Title} {sep} {Album} {sep} {Artists}";
+
+    public static MusicData FromString(string raw, char sep = '|') {
+      var data = raw.Split(sep, StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
+      return new MusicData(GetOrEmpty(data, 0), GetOrEmpty(data, 1), GetOrEmpty(data, 2), GetOrEmpty(data, 3));
+    }
+
+    private static string GetOrEmpty(string[] data, int i) => data.Length > i ? data[i] : "";
   }
 }

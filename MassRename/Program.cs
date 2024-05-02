@@ -2,6 +2,7 @@
 using AvaloniaExtensions;
 using Avalonia.Markup.Declarative;
 using MassRename;
+using MassRename.UI;
 
 var parsedArgs = Args.ParseFrom(args);
 

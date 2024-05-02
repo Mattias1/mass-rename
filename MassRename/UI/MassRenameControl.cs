@@ -1,20 +1,20 @@
 ﻿using Avalonia.Controls;
+using Avalonia.Controls.Primitives;
 using Avalonia.Interactivity;
-using Avalonia.Platform.Storage;
+using Avalonia.Markup.Declarative;
 using AvaloniaExtensions;
 using MsBox.Avalonia;
 using MsBox.Avalonia.Enums;
-using System.Text;
 
-namespace MassRename;
+namespace MassRename.UI;
 
 class MassRenameControl : CanvasComponentBase {
   private Settings? _settings;
   private Settings Settings => _settings ??= GetSettings<Settings>();
   private readonly Args _args;
 
-  private TextBox _tbBrowse = null!;
-  private TextBox _tbOld = null!, _tbNew = null!;
+  private CheckBox _tbMusic = null!;
+  private TextBox _tbBrowse = null!, _tbOld = null!, _tbNew = null!;
 
   public MassRenameControl(Args args) {
     _args = args;
@@ -22,12 +22,30 @@ class MassRenameControl : CanvasComponentBase {
 
   protected override void InitializeControls() {
     AddButton("Rename", OnRenameClick).TopRightInPanel();
-    AddButton("Browse dir", OnBrowseDirClick).LeftOf();
-    var btnBrowseFiles = AddButton("Browse files", OnBrowseFilesClick).LeftOf();
-    _tbBrowse = AddTextBox(Settings.LastDir ?? "").TopLeftInPanel().StretchRightTo(btnBrowseFiles);
+    _tbMusic = AddCheckBox("Music data", OnMusicDataToggle).LeftOf();
+    AddButton("Folders", OnBrowseDirClick).LeftOf();
+    AddButton("Files", OnBrowseFilesClick).LeftOf();
+    _tbBrowse = AddTextBox(Settings.LastDir ?? "").TopLeftInPanel().StretchRightTo();
 
-    _tbOld = AddMultilineTextBox().Below().StretchFractionRightInPanel(1, 2).StretchDownInPanel();
+    _tbOld = AddMultilineTextBox().IsReadOnly(true).Below().StretchFractionRightInPanel(1, 2).StretchDownInPanel();
     _tbNew = AddMultilineTextBox().RightOf().StretchRightInPanel().StretchDownInPanel();
+  }
+
+  protected override void OnInitialized() {
+    base.OnInitialized();
+
+    if (_args.SetEditor is not null) {
+      Settings.Editor = _args.SetEditor;
+    }
+    if (_args.Music is not null) {
+      Settings.SetMusicData = _args.Music.Value;
+    }
+    _tbMusic.IsChecked(Settings.SetMusicData);
+
+    if (!string.IsNullOrWhiteSpace(_args.InitialDirectory)) {
+      SetFilesFromDir(_args.InitialDirectory);
+      Settings.LastDir = _args.InitialDirectory;
+    }
   }
 
   protected override void OnSizeChanged(SizeChangedEventArgs e) {
@@ -38,7 +56,7 @@ class MassRenameControl : CanvasComponentBase {
 
   private async void OnBrowseFilesClick(RoutedEventArgs e) { // Note: async void event handler
     try {
-      var files = await GetPathsViaFileDialogAsync();
+      var files = await DialogHelper.GetPathsViaFileDialogAsync(FindWindow().StorageProvider, _args.InitialDirectory ?? Settings.LastDir);
       if (files.Count > 0) {
         SetFiles(Path.GetDirectoryName(files.First().Path.AbsolutePath), files.Select(f => f.Name));
       }
@@ -48,45 +66,14 @@ class MassRenameControl : CanvasComponentBase {
     }
   }
 
-  private async Task<IReadOnlyList<IStorageFile>> GetPathsViaFileDialogAsync() {
-    var storageProvider = FindWindow().StorageProvider;
-
-    var location = await GetFolderAsync(storageProvider, _args.InitialDirectory ?? Settings.LastDir);
-    var options = new FilePickerOpenOptions {
-        Title = "The files to rename",
-        SuggestedStartLocation = location,
-        AllowMultiple = true
-    };
-
-    return await storageProvider.OpenFilePickerAsync(options).ConfigureAwait(true);
-  }
-
-  private static async Task<IStorageFolder?> GetFolderAsync(IStorageProvider storageProvider, string? path) {
-    return path is null ? null : await storageProvider.TryGetFolderFromPathAsync(new Uri(path));
-  }
-
   private async void OnBrowseDirClick(RoutedEventArgs e) { // Note: async void event handler
     try {
-      var dir = await GetPathViaDirectoryDialogAsync();
+      var dir = await DialogHelper.GetPathViaDirectoryDialogAsync(FindWindow().StorageProvider, _args.InitialDirectory ?? Settings.LastDir);
       SetFilesFromDir(dir.Path.AbsolutePath);
     } catch (Exception exc) {
       Console.WriteLine(exc);
       throw;
     }
-  }
-
-  private async Task<IStorageFolder> GetPathViaDirectoryDialogAsync() {
-    var storageProvider = FindWindow().StorageProvider;
-
-    var location = await GetFolderAsync(storageProvider, _args.InitialDirectory ?? Settings.LastDir);
-    var options = new FolderPickerOpenOptions {
-        Title = "Rename all folders and files in the selected folder",
-        SuggestedStartLocation = location,
-        AllowMultiple = false
-    };
-
-    var directories = await storageProvider.OpenFolderPickerAsync(options).ConfigureAwait(true);
-    return directories.Single();
   }
 
   private void SetFilesFromDir(string directoryPath) {
@@ -95,7 +82,7 @@ class MassRenameControl : CanvasComponentBase {
     }
 
     var filenames = Directory.GetFiles(directoryPath)
-        .Select(p => Path.GetFileName(p) ?? "")
+        .Select(p => Path.GetFileName(p))
         .Where(s => !string.IsNullOrWhiteSpace(s));
     SetFiles(directoryPath, filenames);
   }
@@ -108,20 +95,25 @@ class MassRenameControl : CanvasComponentBase {
     _tbBrowse.Text = pathPrefix;
     Settings.LastDir = pathPrefix;
 
-    var sb = new StringBuilder();
-    foreach (string path in fileNames) {
-      sb.AppendLine(Path.GetFileName(path));
-    }
+    var (from, to) = FileManipulator.DetermineTextboxData(pathPrefix, fileNames.ToArray(), Settings.SetMusicData);
 
-    _tbOld.Text = sb.ToString();
-    _tbNew.Text = _tbOld.Text;
+    _tbOld.Text = from;
+    _tbNew.Text = to;
     _tbNew.Focus();
+  }
+
+  private void OnMusicDataToggle(RoutedEventArgs obj) {
+    Settings.SetMusicData = (obj.Source as ToggleButton)?.IsChecked ?? throw new InvalidOperationException("Cast fail");
+
+    var filenames = _tbOld.Text?.Split(Environment.NewLine.ToCharArray()) ?? [];
+    filenames = filenames.Skip(Settings.SetMusicData ? 0 : 1).ToArray();
+    SetFiles(_tbBrowse.Text, filenames);
   }
 
   private async void OnRenameClick(RoutedEventArgs e) { // Note: async void event handler
     string? errorMessage;
     try {
-      errorMessage = FileManipulator.RenameFiles(_tbBrowse.Text, _tbOld.Text, _tbNew.Text);
+      errorMessage = FileManipulator.RenameFiles(_tbBrowse.Text, _tbOld.Text, _tbNew.Text, Settings.SetMusicData);
     } catch (Exception exc) {
       errorMessage = "An unknown error occurred.\n" + exc.Message;
     }

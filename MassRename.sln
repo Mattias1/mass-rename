@@ -3,6 +3,8 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 2012
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MassRename", "MassRename\MassRename.csproj", "{2CE6DDA9-5F20-47F5-9D2A-0B63D297E83A}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tests", "Tests\Tests.csproj", "{4AB1C6CE-E8E8-459A-83CB-05985C845566}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -13,6 +15,10 @@ Global
 		{2CE6DDA9-5F20-47F5-9D2A-0B63D297E83A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{2CE6DDA9-5F20-47F5-9D2A-0B63D297E83A}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{2CE6DDA9-5F20-47F5-9D2A-0B63D297E83A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4AB1C6CE-E8E8-459A-83CB-05985C845566}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4AB1C6CE-E8E8-459A-83CB-05985C845566}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4AB1C6CE-E8E8-459A-83CB-05985C845566}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4AB1C6CE-E8E8-459A-83CB-05985C845566}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
